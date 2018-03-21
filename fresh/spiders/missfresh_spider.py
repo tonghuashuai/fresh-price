@@ -3,6 +3,11 @@
 import scrapy
 import json
 from ..items import FreshItem
+from ..const import FreshSource
+
+'''
+每日优鲜爬虫
+'''
 
 
 class MissfreshSpider(scrapy.Spider):
@@ -54,6 +59,7 @@ class MissfreshSpider(scrapy.Spider):
                 volume=data.get('sales_volume'),
                 region=data.get('country'),
                 brand=data.get('brand'),
+                source=FreshSource.missfresh,
                 category_id=response.meta.get('category', {}).get('id'),
                 category_name=response.meta.get('category', {}).get('name'),
             )

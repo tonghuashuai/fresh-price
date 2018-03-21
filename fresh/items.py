@@ -11,7 +11,6 @@ from decimal import Decimal
 from scrapy.utils.project import get_project_settings
 from peewee import (MySQLDatabase, Model, CharField, DecimalField,
                     PrimaryKeyField, DateField, DateTimeField, IntegerField)
-from .const import FreshSource
 
 
 mysql = get_project_settings()['MYSQL']
@@ -29,6 +28,7 @@ class FreshItem(scrapy.Item):
     volume = scrapy.Field()
     region = scrapy.Field()
     brand = scrapy.Field()
+    source = scrapy.Field()
     category_id = scrapy.Field()
     category_name = scrapy.Field()
 
@@ -55,7 +55,8 @@ class Fresh(Model):
 
     @classmethod
     def create_(cls, item):
-        o, created = cls.get_or_create(source=FreshSource.missfresh, sku=item['sku'], created_at=datetime.date.today())
+        source = item['source']
+        o, created = cls.get_or_create(source=source, sku=item['sku'], created_at=datetime.date.today())
 
         o.unit = item['unit']
         o.name = item['name']
@@ -68,7 +69,7 @@ class Fresh(Model):
         o.category_id = item['category_id']
         o.category_name = item['category_name']
         o.updated_at = datetime.datetime.now()
-        o.source = FreshSource.missfresh
+        o.source = source
         o.save()
 
 
