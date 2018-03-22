@@ -29,6 +29,8 @@ class FreshItem(scrapy.Item):
     region = scrapy.Field()
     brand = scrapy.Field()
     source = scrapy.Field()
+    coupon_exception = scrapy.Field()
+    sellout = scrapy.Field()
     category_id = scrapy.Field()
     category_name = scrapy.Field()
 
@@ -45,6 +47,8 @@ class Fresh(Model):
     region = CharField(default='')
     brand = CharField(default='')
     source = IntegerField(index=True)
+    coupon_exception = IntegerField(index=True, default=0)
+    sellout = CharField(default='')
     category_id = CharField(index=True, null=True)
     category_name = CharField(index=True, default='')
     created_at = DateField(index=True, null=True)
@@ -58,19 +62,22 @@ class Fresh(Model):
         source = item['source']
         o, created = cls.get_or_create(source=source, sku=item['sku'], created_at=datetime.date.today())
 
-        o.unit = item['unit']
-        o.name = item['name']
+        o.unit = item['unit'].strip()
+        o.name = item['name'].strip()
         o.price = Decimal(item['price'])
         o.price_origin = Decimal(item['price_origin'])
-        o.promotion = item['promotion']
-        o.volume = item['volume'] or o.volume
-        o.region = item['region']
-        o.brand = item['brand']
+        o.promotion = item['promotion'].strip()
+        o.volume = item['volume'].strip() if item['volume'] else o.volume
+        o.region = item['region'].strip()
+        o.brand = item['brand'].strip()
         o.category_id = item['category_id']
-        o.category_name = item['category_name']
+        o.category_name = item['category_name'].strip()
+        o.coupon_exception = item['coupon_exception']
+        o.sellout = item['sellout'].strip()
         o.updated_at = datetime.datetime.now()
         o.source = source
         o.save()
+        print '>>>>>>>>>>>>', item['sellout'].strip()
 
     @classmethod
     def update_volume(cls, source, sku, volume):

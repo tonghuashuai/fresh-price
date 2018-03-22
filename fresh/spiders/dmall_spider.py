@@ -145,6 +145,8 @@ class DmallSpider(scrapy.Spider):
                 region=region,
                 brand=brand,
                 source=FreshSource.dmall,
+                coupon_excepton=0,
+                sellout='',
                 category_id=response.meta.get('category', {}).get('id'),
                 category_name=response.meta.get('category', {}).get('name'),
             )

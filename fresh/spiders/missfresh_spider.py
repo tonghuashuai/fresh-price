@@ -34,6 +34,20 @@ class MissfreshSpider(scrapy.Spider):
                 yield scrapy.Request(url, callback=self.parse_goods_in_category, headers=self.headers,
                                      meta={'category': {'id': internal_id, 'name': category.get('name')}})
 
+    def _get_coupon_exception(self, product_tags):
+        coupon_exception = 0
+        if product_tags:
+            for tag in product_tags:
+                if tag.get('name') == u'红包不可用':
+                    coupon_exception = 1
+                    break
+
+        return coupon_exception
+
+    def _get_sellout_label(self, car_btn_name):
+        return {u'到货提醒': '缺货',
+                u'明日送达': '今日售罄'}.get(car_btn_name, '')
+
     def parse_goods_in_category(self, response):
         if response.body:
             product_list = json.loads(response.body).get('products')
@@ -43,6 +57,8 @@ class MissfreshSpider(scrapy.Spider):
             for product in product_list:
                 sku = product.get('sku')
                 if sku:
+                    response.meta.update(coupon_exception=self._get_coupon_exception(product.get('product_tags')))
+                    response.meta.update(sellout=self._get_sellout_label(product.get('cart_btn_name')))
                     url = '{host}{sku}{params}'.format(host=self.host, sku=sku, params=self.params)
                     yield scrapy.Request(url, callback=self.parse_goods_info, meta=response.meta, headers=self.headers,)
 
@@ -60,6 +76,8 @@ class MissfreshSpider(scrapy.Spider):
                 region=data.get('country'),
                 brand=data.get('brand'),
                 source=FreshSource.missfresh,
+                coupon_exception=response.meta.get('coupon_exception'),
+                sellout=response.meta.get('sellout'),
                 category_id=response.meta.get('category', {}).get('id'),
                 category_name=response.meta.get('category', {}).get('name'),
             )
