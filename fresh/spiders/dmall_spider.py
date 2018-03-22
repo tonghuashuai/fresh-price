@@ -2,7 +2,8 @@
 
 import scrapy
 import json
-from ..items import FreshItem
+import re
+from ..items import FreshItem, Fresh
 from ..const import FreshSource
 
 '''
@@ -66,7 +67,7 @@ class DmallSpider(scrapy.Spider):
 
             for product in product_list:
                 sku = product.get('sku')
-                print '>>>>>>>>>>>>>>>', sku, response.meta.get('page')
+                # print '>>>>>>>>>>>>>>>', sku, response.meta.get('page')
                 if sku:
                     body_param = {
                         "sku": str(sku),
@@ -79,6 +80,14 @@ class DmallSpider(scrapy.Spider):
                     yield scrapy.FormRequest(url, callback=self.parse_goods_info, method='POST',
                                              formdata={'param': json.dumps(body_param)},
                                              meta=response.meta, headers=self.headers)
+
+                    # 更新销量
+                    url = 'https://detail.dmall.com/app/wareDetail/extendinfo'.format(host=self.host)
+                    meta = response.meta
+                    meta.update(sku=sku)
+                    yield scrapy.FormRequest(url, callback=self.update_volume, method='POST',
+                                             formdata={'param': json.dumps(body_param)},
+                                             meta=meta, headers=self.headers)
 
             # 翻页
             meta = response.meta
@@ -125,7 +134,6 @@ class DmallSpider(scrapy.Spider):
                 if d.get('name') == u'品牌':
                     brand = d.get('value')
 
-            print unit, region, brand
             yield FreshItem(
                 name=data.get('wareName'),
                 sku=str(data.get('sku')),
@@ -140,3 +148,12 @@ class DmallSpider(scrapy.Spider):
                 category_id=response.meta.get('category', {}).get('id'),
                 category_name=response.meta.get('category', {}).get('name'),
             )
+
+    def update_volume(self, response):
+        if response.body:
+            data = json.loads(response.body).get('data', {}).get('sellOutCount', '')
+            volume = re.findall(u'已售(.*?)件', data)
+            volume = volume[0] if volume else 0
+
+            sku = response.meta.get('sku')
+            Fresh.update_volume(FreshSource.dmall, sku, volume)

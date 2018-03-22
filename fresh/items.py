@@ -63,13 +63,19 @@ class Fresh(Model):
         o.price = Decimal(item['price'])
         o.price_origin = Decimal(item['price_origin'])
         o.promotion = item['promotion']
-        o.volume = item['volume']
+        o.volume = item['volume'] or o.volume
         o.region = item['region']
         o.brand = item['brand']
         o.category_id = item['category_id']
         o.category_name = item['category_name']
         o.updated_at = datetime.datetime.now()
         o.source = source
+        o.save()
+
+    @classmethod
+    def update_volume(cls, source, sku, volume):
+        o, created = cls.get_or_create(source=source, sku=sku, created_at=datetime.date.today())
+        o.volume = volume
         o.save()
 
 
