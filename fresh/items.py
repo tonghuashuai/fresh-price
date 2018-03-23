@@ -77,7 +77,6 @@ class Fresh(Model):
         o.updated_at = datetime.datetime.now()
         o.source = source
         o.save()
-        print '>>>>>>>>>>>>', item['sellout'].strip()
 
     @classmethod
     def update_volume(cls, source, sku, volume):
